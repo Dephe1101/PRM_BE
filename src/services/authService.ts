@@ -34,8 +34,7 @@ export const authService = {
       expiresAt,
     });
 
-    const userObj = newUser.toObject();
-    delete userObj.passwordHash;
+    const { passwordHash, ...userObj } = newUser.toObject();
 
     return { user: userObj, accessToken, refreshToken };
   },
@@ -47,15 +46,10 @@ export const authService = {
       throw new ApiError(ERROR_CODES.INVALID_CREDENTIALS);
     }
 
-    // 2. Kiểm tra mật khẩu (Cần lấy đối tượng Document để gọi method)
-    const userDoc = await USER_REPOSITORY.findByIdWithPassword(user._id.toString());
-    if (!userDoc) {
-      throw new ApiError(ERROR_CODES.INVALID_CREDENTIALS);
-    }
-
+    // 2. Kiểm tra mật khẩu
     // Trong mongoose 6/7/8 khi lean thì mất method, phải gọi bcrypt trực tiếp
     const bcrypt = require('bcryptjs');
-    const isMatch = await bcrypt.compare(password, userDoc.passwordHash);
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       throw new ApiError(ERROR_CODES.INVALID_CREDENTIALS);
     }
@@ -74,7 +68,10 @@ export const authService = {
       expiresAt,
     });
 
-    return { user, accessToken, refreshToken };
+    // 5. Tránh lộ passwordHash ra ngoài
+    const { passwordHash: _, ...userObj } = user;
+
+    return { user: userObj, accessToken, refreshToken };
   },
 
   refresh: async (refreshToken: string, ipAddress: string, userAgent: string) => {
@@ -86,8 +83,10 @@ export const authService = {
       throw new ApiError(ERROR_CODES.UNAUTHORIZED);
     }
 
-    // 2. Xóa session cũ
-    await SESSION_REPOSITORY.deleteById(session._id.toString());
+    // 2. Không xóa ngay lập tức để tránh Race Condition (Grace Period 60 giây)
+    await SESSION_REPOSITORY.update(session._id.toString(), {
+      expiresAt: new Date(Date.now() + 60 * 1000), // Sống thêm 60 giây
+    });
 
     // 3. Lấy thông tin user
     const user = await USER_REPOSITORY.findById(session.userId.toString());

@@ -7,7 +7,7 @@ import { auditLogMiddleware } from '#middlewares/auditLogMiddleware';
 import { validationMiddleware } from '#middlewares/validationMiddleware';
 import { sanitizeRequest } from '#middlewares/sanitizeRequest';
 import { COMMON_CONSTANTS } from '#constants/common';
-import { GENERATE_UTILS } from '#utils/generateUtils';
+import { commonValidation } from '#validations/commonValidation';
 
 const router = Router();
 
@@ -76,6 +76,7 @@ router.get('/', levelController.getAllLevels);
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[A-Z0-9]+$'
  *         description: "ID của Level (Ví dụ: N5)"
  *     responses:
  *       200:
@@ -102,7 +103,7 @@ router.get('/', levelController.getAllLevels);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', levelController.getLevelById);
+router.get('/:id', validationMiddleware(commonValidation.checkLevelId), levelController.getLevelById);
 
 /**
  * @swagger
@@ -126,22 +127,28 @@ router.get('/:id', levelController.getLevelById);
  *             properties:
  *               _id:
  *                 type: string
+ *                 pattern: '^[A-Z0-9]+$'
  *                 description: "ID cấp độ, không được chứa ký tự đặc biệt, không dấu (Ví dụ: N3)"
  *                 example: "N3"
  *               name:
  *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
  *                 description: "Tên hiển thị của cấp độ"
  *                 example: "N3 - Trung cấp"
  *               description:
  *                 type: string
+ *                 maxLength: 500
  *                 description: "Mô tả chi tiết"
  *                 example: "Khóa học N3 tiêu chuẩn"
  *               orderIndex:
- *                 type: number
+ *                 type: integer
+ *                 minimum: 0
  *                 description: "Thứ tự sắp xếp (ví dụ 3)"
  *                 example: 3
  *               isActive:
  *                 type: boolean
+ *                 default: true
  *                 description: "Trạng thái kích hoạt (Mặc định true)"
  *                 example: true
  *     responses:
@@ -178,10 +185,7 @@ router.post(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(levelValidation.createLevel.body),
-    []
-  ),
+  sanitizeRequest(levelValidation.createLevel.body),
   validationMiddleware(levelValidation.createLevel),
   levelController.createLevel
 );
@@ -201,9 +205,10 @@ router.post(
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[A-Z0-9]+$'
  *         description: "ID của Level cần sửa (VD: N5)"
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
@@ -211,12 +216,16 @@ router.post(
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
  *                 example: "N5 - Cập nhật"
  *               description:
  *                 type: string
+ *                 maxLength: 500
  *                 example: "Mô tả cập nhật"
  *               orderIndex:
- *                 type: number
+ *                 type: integer
+ *                 minimum: 0
  *                 example: 1
  *               isActive:
  *                 type: boolean
@@ -251,10 +260,7 @@ router.put(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(levelValidation.updateLevel.body),
-    []
-  ),
+  sanitizeRequest(levelValidation.updateLevel.body),
   validationMiddleware(levelValidation.updateLevel),
   levelController.updateLevel
 );
@@ -274,6 +280,7 @@ router.put(
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[A-Z0-9]+$'
  *         description: "ID Level cần xóa (VD: N5)"
  *     responses:
  *       200:
@@ -301,6 +308,7 @@ router.delete(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
+  validationMiddleware(commonValidation.checkLevelId),
   levelController.deleteLevel
 );
 

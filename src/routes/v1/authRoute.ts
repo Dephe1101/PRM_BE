@@ -5,7 +5,7 @@ import { validationMiddleware } from '#middlewares/validationMiddleware';
 import { sanitizeRequest } from '#middlewares/sanitizeRequest';
 import { apiLimiter as loginLimiter } from '#middlewares/rateLimiter';
 import { authValidation } from '#validations/authValidation';
-import { GENERATE_UTILS } from '#utils/generateUtils';
+import { commonValidation } from '#validations/commonValidation';
 
 const router = Router();
 
@@ -36,6 +36,8 @@ const router = Router();
  *             properties:
  *               username:
  *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 50
  *                 description: Tên người dùng hiển thị
  *                 example: "nguyenvana"
  *               email:
@@ -45,6 +47,8 @@ const router = Router();
  *                 example: "nguyenvana@example.com"
  *               password:
  *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 128
  *                 description: Mật khẩu (tối thiểu 6 ký tự)
  *                 example: "MatKhauBaoMat123"
  *     responses:
@@ -104,10 +108,7 @@ const router = Router();
 router.post(
   '/register',
   loginLimiter,
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(authValidation.register.body),
-    []
-  ),
+  sanitizeRequest(authValidation.register.body),
   validationMiddleware(authValidation.register),
   authController.register
 );
@@ -188,10 +189,7 @@ router.post(
 router.post(
   '/login',
   loginLimiter,
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(authValidation.login.body),
-    []
-  ),
+  sanitizeRequest(authValidation.login.body),
   validationMiddleware(authValidation.login),
   authController.login
 );
@@ -445,6 +443,6 @@ router.get('/sessions', authMiddleware, authController.getSessions);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/sessions/:id', authMiddleware, authController.deleteSession);
+router.delete('/sessions/:id', authMiddleware, validationMiddleware(commonValidation.checkId), authController.deleteSession);
 
 export default router;

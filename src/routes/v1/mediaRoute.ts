@@ -4,6 +4,7 @@ import { mediaValidation } from '#validations/mediaValidation';
 import { authMiddleware } from '#middlewares/authMiddleware';
 import { allowRoles } from '#middlewares/allowRoles';
 import { validationMiddleware } from '#middlewares/validationMiddleware';
+import { commonValidation } from '#validations/commonValidation';
 import { auditLogMiddleware } from '#middlewares/auditLogMiddleware';
 import { uploadSingle, uploadMultiple } from '#configs/multer';
 import { COMMON_CONSTANTS } from '#constants/common';
@@ -58,6 +59,7 @@ router.use(auditLogMiddleware);
  *               folder:
  *                 type: string
  *                 enum: [words, profile, general]
+ *                 default: general
  *                 description: "Thư mục đích trên Cloudinary. Nếu không truyền sẽ vào thư mục mặc định (general)"
  *     responses:
  *       201:
@@ -126,6 +128,8 @@ router.post(
  *               folder:
  *                 type: string
  *                 enum: [words, profile, general]
+ *                 default: general
+ *                 description: "Thư mục phân loại trên Cloudinary"
  *     responses:
  *       201:
  *         description: Upload toàn bộ thành công
@@ -174,15 +178,19 @@ router.post(
  *         schema:
  *           type: string
  *           enum: [words, profile, general]
+ *         description: "Lọc theo thư mục"
  *       - in: query
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
  *           default: 1
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 100
  *           default: 10
  *     responses:
  *       200:
@@ -210,13 +218,14 @@ router.get(
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *     responses:
  *       200:
  *         description: Thành công
  *       404:
  *         description: Không tìm thấy
  */
-router.get('/:id', mediaController.getById);
+router.get('/:id', validationMiddleware(commonValidation.checkId), mediaController.getById);
 
 /**
  * @swagger
@@ -233,6 +242,7 @@ router.get('/:id', mediaController.getById);
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *     responses:
  *       200:
  *         description: Xóa thành công
@@ -241,6 +251,6 @@ router.get('/:id', mediaController.getById);
  *       404:
  *         description: Không tìm thấy Media
  */
-router.delete('/:id', mediaController.delete);
+router.delete('/:id', validationMiddleware(commonValidation.checkId), mediaController.delete);
 
 export default router;

@@ -25,15 +25,9 @@ export const gameValidation = {
 
   submitGame: {
     body: Joi.object({
-      topicIds: Joi.array().items(
-        Joi.string().regex(REGEXP.OBJECT_ID)
-      ).min(1).required().messages({
-        'any.required': 'Danh sách chủ đề là bắt buộc',
-      }),
-      gameType: Joi.string().valid(
-        ...Object.values(COMMON_CONSTANTS.GAME_TYPE)
-      ).required().messages({
-        'any.required': 'Loại game là bắt buộc',
+      sessionId: Joi.string().regex(REGEXP.OBJECT_ID).required().messages({
+        'any.required': 'Session ID là bắt buộc',
+        'string.pattern.base': 'Session ID không hợp lệ',
       }),
       score: Joi.number().integer().min(0).required().messages({
         'any.required': 'Điểm số là bắt buộc',

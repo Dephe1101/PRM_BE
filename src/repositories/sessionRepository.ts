@@ -24,4 +24,8 @@ export const SESSION_REPOSITORY = {
   deleteById: async (sessionId: string): Promise<void> => {
     await Session.findByIdAndDelete(sessionId);
   },
+
+  update: async (id: string, data: any): Promise<void> => {
+    await Session.findByIdAndUpdate(id, data);
+  },
 };

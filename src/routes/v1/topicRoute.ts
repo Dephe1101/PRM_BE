@@ -7,7 +7,7 @@ import { auditLogMiddleware } from '#middlewares/auditLogMiddleware';
 import { validationMiddleware } from '#middlewares/validationMiddleware';
 import { sanitizeRequest } from '#middlewares/sanitizeRequest';
 import { COMMON_CONSTANTS } from '#constants/common';
-import { GENERATE_UTILS } from '#utils/generateUtils';
+import { commonValidation } from '#validations/commonValidation';
 
 const router = Router();
 
@@ -31,6 +31,7 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[A-Z0-9]+$'
  *         description: "ID của Level (Ví dụ: N5)"
  *     responses:
  *       200:
@@ -84,6 +85,7 @@ router.get('/level/:levelId', validationMiddleware(topicValidation.getByLevel), 
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *         description: "MongoDB ObjectId của Topic"
  *     responses:
  *       200:
@@ -114,7 +116,7 @@ router.get('/level/:levelId', validationMiddleware(topicValidation.getByLevel), 
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', topicController.getTopicDetail);
+router.get('/:id', validationMiddleware(commonValidation.checkId), topicController.getTopicDetail);
 
 /**
  * @swagger
@@ -138,10 +140,13 @@ router.get('/:id', topicController.getTopicDetail);
  *             properties:
  *               levelId:
  *                 type: string
+ *                 pattern: '^[A-Z0-9]+$'
  *                 description: "ID Level (Ví dụ: N5)"
  *                 example: "N5"
  *               title:
  *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
  *                 description: "Tên Topic"
  *                 example: "Từ vựng bài 1 Minna"
  *               orderIndex:
@@ -150,6 +155,7 @@ router.get('/:id', topicController.getTopicDetail);
  *                 example: 1
  *               words:
  *                 type: array
+ *                 minItems: 7
  *                 description: "Mảng danh sách các từ vựng thuộc bài này"
  *                 items:
  *                   type: object
@@ -172,6 +178,9 @@ router.get('/:id', topicController.getTopicDetail);
  *                     example:
  *                       type: string
  *                       example: "私は学生です。"
+ *                     audioUrl:
+ *                       type: string
+ *                       format: uri
  *     responses:
  *       201:
  *         description: Import thành công
@@ -207,10 +216,7 @@ router.post(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(topicValidation.importTopic.body),
-    []
-  ),
+  sanitizeRequest(topicValidation.importTopic.body),
   validationMiddleware(topicValidation.importTopic),
   topicController.importTopic
 );
@@ -230,9 +236,10 @@ router.post(
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *         description: "ObjectId của Topic"
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
@@ -240,9 +247,12 @@ router.post(
  *             properties:
  *               title:
  *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
  *                 example: "Bài 1 - Cập nhật"
  *               orderIndex:
- *                 type: number
+ *                 type: integer
+ *                 minimum: 0
  *                 example: 2
  *     responses:
  *       200:
@@ -257,10 +267,7 @@ router.put(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(topicValidation.updateTopic.body),
-    []
-  ),
+  sanitizeRequest(topicValidation.updateTopic.body),
   validationMiddleware(topicValidation.updateTopic),
   topicController.updateTopic
 );
@@ -280,6 +287,7 @@ router.put(
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *         description: "ObjectId của Topic"
  *     responses:
  *       200:
@@ -296,6 +304,7 @@ router.delete(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
+  validationMiddleware(commonValidation.checkId),
   topicController.deleteTopic
 );
 

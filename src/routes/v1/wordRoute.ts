@@ -7,9 +7,9 @@ import { auditLogMiddleware } from '#middlewares/auditLogMiddleware';
 import { validationMiddleware } from '#middlewares/validationMiddleware';
 import { sanitizeRequest } from '#middlewares/sanitizeRequest';
 import { COMMON_CONSTANTS } from '#constants/common';
-import { GENERATE_UTILS } from '#utils/generateUtils';
 import Joi from 'joi';
 import { REGEXP } from '#constants/regexp';
+import { commonValidation } from '#validations/commonValidation';
 
 const router = Router();
 
@@ -33,6 +33,7 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *         description: "ObjectId của Topic"
  *     responses:
  *       200:
@@ -96,6 +97,7 @@ router.get(
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *         description: "ObjectId của Từ vựng"
  *     responses:
  *       200:
@@ -107,7 +109,7 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', wordController.getWordById);
+router.get('/:id', validationMiddleware(commonValidation.checkId), wordController.getWordById);
 
 /**
  * @swagger
@@ -131,19 +133,25 @@ router.get('/:id', wordController.getWordById);
  *             properties:
  *               topicId:
  *                 type: string
+ *                 pattern: '^[0-9a-fA-F]{24}$'
  *                 description: "ID bài học chứa từ này"
  *               kanji:
  *                 type: string
+ *                 default: ""
  *               hiragana:
  *                 type: string
  *               romaji:
  *                 type: string
+ *                 default: ""
  *               meaning:
  *                 type: string
  *               example:
  *                 type: string
+ *                 default: ""
  *               audioUrl:
  *                 type: string
+ *                 format: uri
+ *                 default: ""
  *     responses:
  *       201:
  *         description: Tạo thành công
@@ -161,10 +169,7 @@ router.post(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(wordValidation.createWord.body),
-    []
-  ),
+  sanitizeRequest(wordValidation.createWord.body),
   validationMiddleware(wordValidation.createWord),
   wordController.createWord
 );
@@ -184,9 +189,10 @@ router.post(
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *         description: "ObjectId của từ vựng"
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
@@ -204,6 +210,7 @@ router.post(
  *                 type: string
  *               audioUrl:
  *                 type: string
+ *                 format: uri
  *     responses:
  *       200:
  *         description: Cập nhật thành công
@@ -219,10 +226,7 @@ router.put(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(wordValidation.updateWord.body),
-    []
-  ),
+  sanitizeRequest(wordValidation.updateWord.body),
   validationMiddleware(wordValidation.updateWord),
   wordController.updateWord
 );
@@ -242,6 +246,7 @@ router.put(
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *         description: "ObjectId của từ vựng"
  *     responses:
  *       200:
@@ -258,6 +263,7 @@ router.delete(
   authMiddleware,
   allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
   auditLogMiddleware,
+  validationMiddleware(commonValidation.checkId),
   wordController.deleteWord
 );
 

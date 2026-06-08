@@ -4,7 +4,7 @@ import { gameValidation } from '#validations/gameValidation';
 import { authMiddleware } from '#middlewares/authMiddleware';
 import { validationMiddleware } from '#middlewares/validationMiddleware';
 import { sanitizeRequest } from '#middlewares/sanitizeRequest';
-import { GENERATE_UTILS } from '#utils/generateUtils';
+import { commonValidation } from '#validations/commonValidation';
 
 const router = Router();
 
@@ -33,8 +33,10 @@ const router = Router();
  *         name: limit
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 50
  *           default: 10
- *         description: "Số lượng top user muốn lấy (Tối đa 100)"
+ *         description: "Số lượng top user muốn lấy"
  *     responses:
  *       200:
  *         description: Bảng xếp hạng
@@ -58,7 +60,7 @@ const router = Router();
  *                       totalScore:
  *                         type: number
  */
-router.get('/leaderboard', gameController.getLeaderboard);
+router.get('/leaderboard', validationMiddleware(gameValidation.getLeaderboard), gameController.getLeaderboard);
 
 // === Các route dưới đây yêu cầu đăng nhập ===
 router.use(authMiddleware);
@@ -119,9 +121,12 @@ router.get('/eligible-topics', gameController.getEligibleTopics);
  *             properties:
  *               topicIds:
  *                 type: array
+ *                 minItems: 1
+ *                 maxItems: 5
  *                 items:
  *                   type: string
- *                 description: "Array ObjectId của các Topic (Tối đa 5)"
+ *                   pattern: '^[0-9a-fA-F]{24}$'
+ *                 description: "Array ObjectId của các Topic"
  *               gameType:
  *                 type: string
  *                 enum: [FALLING_WORDS, MULTIPLE_CHOICE]
@@ -166,10 +171,7 @@ router.get('/eligible-topics', gameController.getEligibleTopics);
  */
 router.post(
   '/start',
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(gameValidation.startGame.body),
-    []
-  ),
+  sanitizeRequest(gameValidation.startGame.body),
   validationMiddleware(gameValidation.startGame),
   gameController.startGame
 );
@@ -190,33 +192,33 @@ router.post(
  *           schema:
  *             type: object
  *             required:
- *               - topicIds
- *               - gameType
+ *               - sessionId
  *               - score
  *             properties:
- *               topicIds:
- *                 type: array
- *                 items:
- *                   type: string
- *               gameType:
+ *               sessionId:
  *                 type: string
- *                 enum: [FALLING_WORDS, MULTIPLE_CHOICE]
+ *                 description: "Session ID nhận được từ API /games/start"
  *               score:
- *                 type: number
+ *                 type: integer
+ *                 minimum: 0
  *                 description: "Điểm số đạt được trong ván"
  *               maxCombo:
- *                 type: number
+ *                 type: integer
+ *                 minimum: 0
+ *                 default: 0
  *                 description: "Combo liên tiếp cao nhất"
  *               wordsHit:
  *                 type: array
  *                 description: "Danh sách ObjectId của các từ vựng chọn đúng"
  *                 items:
  *                   type: string
+ *                   pattern: '^[0-9a-fA-F]{24}$'
  *               wordsMissed:
  *                 type: array
  *                 description: "Danh sách ObjectId của các từ vựng chọn sai (Sẽ bị tụt stage)"
  *                 items:
  *                   type: string
+ *                   pattern: '^[0-9a-fA-F]{24}$'
  *     responses:
  *       201:
  *         description: Lưu kết quả thành công
@@ -244,10 +246,7 @@ router.post(
  */
 router.post(
   '/submit',
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(gameValidation.submitGame.body),
-    []
-  ),
+  sanitizeRequest(gameValidation.submitGame.body),
   validationMiddleware(gameValidation.submitGame),
   gameController.submitGame
 );
@@ -266,10 +265,15 @@ router.post(
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           default: 1
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
  *       - in: query
  *         name: gameType
  *         schema:
@@ -307,7 +311,7 @@ router.get(
  *       404:
  *         description: Không tìm thấy History
  */
-router.get('/history/:id', gameController.getHistoryDetail);
+router.get('/history/:id', validationMiddleware(commonValidation.checkId), gameController.getHistoryDetail);
 
 /**
  * @swagger

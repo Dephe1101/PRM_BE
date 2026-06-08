@@ -88,7 +88,17 @@ export const gameService = {
       return baseWord;
     });
 
+    // 3. TẠO GAME SESSION (ANTI-CHEAT)
+    const gameSession = await GAME_SESSION_REPOSITORY.create({
+      userId: userId as any,
+      includedTopics: topicIds as any,
+      gameType,
+      status: 'playing',
+      startTime: new Date(),
+    });
+
     return {
+      sessionId: gameSession._id,
       gameType,
       totalWords: gameWords.length,
       words: gameWords,
@@ -96,24 +106,48 @@ export const gameService = {
   },
 
   submitGame: async (userId: string, data: any) => {
-    const { topicIds, gameType, score, maxCombo, wordsHit, wordsMissed } = data;
+    const { sessionId, score, maxCombo, wordsHit, wordsMissed } = data;
 
-    // 1. TÍNH COINS
-    const { coinsEarned, xpEarned } = calculateRewards(score, maxCombo, gameType);
+    // 1. TÌM SESSION & ANTI-CHEAT VALIDATION
+    const gameSession = await GAME_SESSION_REPOSITORY.findById(sessionId);
+    if (!gameSession || gameSession.userId.toString() !== userId.toString()) {
+      throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 'Session game không hợp lệ');
+    }
+    if (gameSession.status !== 'playing') {
+      throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 'Session game này đã kết thúc hoặc bị hủy');
+    }
 
-    // 2. LƯU GAME SESSION
-    const gameSession = await GAME_SESSION_REPOSITORY.create({
-      userId: userId as any,
-      includedTopics: topicIds as any,
-      gameType,
-      score,
-      maxCombo,
+    const endTime = new Date();
+    const playDuration = (endTime.getTime() - new Date(gameSession.startTime).getTime()) / 1000;
+    const totalAnswers = wordsHit.length + wordsMissed.length;
+
+    // Nếu chơi 100 từ trong chưa tới 3 giây -> Gian lận
+    if (totalAnswers > 0 && playDuration < totalAnswers * 0.5) {
+      // Đánh dấu abandoned và ném lỗi
+      await GAME_SESSION_REPOSITORY.update(sessionId, { status: 'abandoned', endTime });
+      throw new ApiError(ERROR_CODES.FORBIDDEN, 'Phát hiện nghi vấn gian lận thời gian trả lời');
+    }
+
+    // Tính điểm tối đa có thể đạt được (Mỗi từ 100đ, max combo x1.2)
+    const maxTheoreticalScore = wordsHit.length * 100 * 1.5;
+    const finalScore = Math.min(score, maxTheoreticalScore); // Không cho vượt trần
+    const finalCombo = Math.min(maxCombo, wordsHit.length);
+
+    // 2. TÍNH COINS VÀ XP
+    const { coinsEarned, xpEarned } = calculateRewards(finalScore, finalCombo, gameSession.gameType);
+
+    // 3. LƯU LẠI GAME SESSION
+    await GAME_SESSION_REPOSITORY.update(sessionId, {
+      score: finalScore,
+      maxCombo: finalCombo,
       coinsEarned,
+      status: 'completed',
+      endTime,
     });
 
-    // 3. CỘNG COINS + XP
+    // 4. CỘNG COINS + XP VÀO USER PROFILE
     await USER_REPOSITORY.addCoins(userId, coinsEarned);
-    // TODO: update XP if user repo has addXp
+    await USER_REPOSITORY.addXp(userId, xpEarned);
 
     // 4. ĐỒNG BỘ SRS
     for (const wordId of wordsHit) {

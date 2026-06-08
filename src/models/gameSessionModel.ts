@@ -9,6 +9,9 @@ export interface IGameSession extends Document {
   score: number;
   maxCombo: number;
   coinsEarned: number;
+  status: string; // 'playing' | 'completed' | 'abandoned'
+  startTime: Date;
+  endTime: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +45,18 @@ const gameSessionSchema = new Schema(
     coinsEarned: {
       type: Number,
       default: 0,
+    },
+    status: {
+      type: String,
+      enum: ['playing', 'completed', 'abandoned'],
+      default: 'playing',
+    },
+    startTime: {
+      type: Date,
+      default: Date.now,
+    },
+    endTime: {
+      type: Date,
     },
   },
   { timestamps: true }

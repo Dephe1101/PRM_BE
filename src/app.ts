@@ -17,6 +17,9 @@ import { swaggerSpec } from '#configs/swagger';
 
 const app = express();
 
+// Trust Proxy cho Load Balancer / Reverse Proxy (Vercel, Render, AWS, Nginx...)
+app.set('trust proxy', 1);
+
 // === Global Middlewares ===
 app.use(helmet());
 
@@ -37,6 +40,9 @@ app.use((req, res, next) => {
 
 if (ENV.NODE_ENV === 'development') {
   app.use(morgan('dev'));
+} else {
+  // Ghi log chi tiết (IP, User-Agent, Thời gian, Kích thước) cho Production
+  app.use(morgan('combined'));
 }
 
 app.use('/api', apiLimiter);

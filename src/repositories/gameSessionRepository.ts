@@ -10,6 +10,10 @@ export const GAME_SESSION_REPOSITORY = {
     return GameSession.findById(id).populate('includedTopics').lean();
   },
 
+  update: async (id: string, data: Partial<IGameSession>): Promise<IGameSession | null> => {
+    return GameSession.findByIdAndUpdate(id, data, { new: true }).lean();
+  },
+
   findByUserId: async (userId: string, options: PaginateOptions = {}): Promise<PaginateResult<IGameSession>> => {
     return GameSession.paginate({ userId }, options);
   },

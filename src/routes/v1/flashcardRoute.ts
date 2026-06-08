@@ -4,7 +4,6 @@ import { flashcardValidation } from '#validations/flashcardValidation';
 import { authMiddleware } from '#middlewares/authMiddleware';
 import { validationMiddleware } from '#middlewares/validationMiddleware';
 import { sanitizeRequest } from '#middlewares/sanitizeRequest';
-import { GENERATE_UTILS } from '#utils/generateUtils';
 
 const router = Router();
 
@@ -33,6 +32,7 @@ router.use(authMiddleware);
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *         description: "ObjectId của Topic"
  *     responses:
  *       200:
@@ -107,6 +107,7 @@ router.get(
  *             properties:
  *               wordId:
  *                 type: string
+ *                 pattern: '^[0-9a-fA-F]{24}$'
  *                 description: "ObjectId của từ vựng vừa lật"
  *               isCorrect:
  *                 type: boolean
@@ -145,10 +146,7 @@ router.get(
  */
 router.post(
   '/submit',
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(flashcardValidation.submit.body),
-    []
-  ),
+  sanitizeRequest(flashcardValidation.submit.body),
   validationMiddleware(flashcardValidation.submit),
   flashcardController.submit
 );
@@ -173,6 +171,7 @@ router.post(
  *             properties:
  *               results:
  *                 type: array
+ *                 minItems: 1
  *                 items:
  *                   type: object
  *                   required:
@@ -181,6 +180,7 @@ router.post(
  *                   properties:
  *                     wordId:
  *                       type: string
+ *                       pattern: '^[0-9a-fA-F]{24}$'
  *                     isCorrect:
  *                       type: boolean
  *     responses:
@@ -193,10 +193,7 @@ router.post(
  */
 router.post(
   '/submit-batch',
-  sanitizeRequest(
-    GENERATE_UTILS.extractFieldsFromJoi(flashcardValidation.submitBatch.body),
-    []
-  ),
+  sanitizeRequest(flashcardValidation.submitBatch.body),
   validationMiddleware(flashcardValidation.submitBatch),
   flashcardController.submitBatch
 );
@@ -303,6 +300,7 @@ router.get('/bookmarks', flashcardController.getBookmarks);
  *         required: true
  *         schema:
  *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
  *     responses:
  *       200:
  *         description: Thành công
