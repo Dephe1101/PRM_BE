@@ -22,6 +22,11 @@ export const ERROR_CODES = {
     code: 'FORBIDDEN',
     message: 'Bạn không có quyền thực hiện hành động này',
   },
+  ACCOUNT_DISABLED: {
+    statusCode: StatusCodes.FORBIDDEN,
+    code: 'ACCOUNT_DISABLED',
+    message: 'Tài khoản của bạn đã bị vô hiệu hóa',
+  },
   EMAIL_EXISTS: {
     statusCode: StatusCodes.CONFLICT,
     code: 'EMAIL_EXISTS',
@@ -41,10 +46,10 @@ export const ERROR_CODES = {
     code: 'LEVEL_NOT_FOUND',
     message: 'Không tìm thấy cấp độ',
   },
-  LEVEL_ID_EXISTS: {
+  LEVEL_NAME_EXISTS: {
     statusCode: StatusCodes.CONFLICT,
-    code: 'LEVEL_ID_EXISTS',
-    message: 'Mã cấp độ đã tồn tại',
+    code: 'LEVEL_NAME_EXISTS',
+    message: 'Tên cấp độ đã tồn tại',
   },
 
   // ===== Topic =====
@@ -57,6 +62,11 @@ export const ERROR_CODES = {
     statusCode: StatusCodes.BAD_REQUEST,
     code: 'TOPIC_WORD_COUNT_INVALID',
     message: 'Mỗi chủ đề phải có từ 7 đến 13 từ vựng',
+  },
+  TOPIC_TITLE_EXISTS: {
+    statusCode: StatusCodes.CONFLICT,
+    code: 'TOPIC_TITLE_EXISTS',
+    message: 'Tên chủ đề đã tồn tại trong cấp độ này',
   },
 
   // ===== Word =====

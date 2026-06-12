@@ -10,6 +10,10 @@ export const LEVEL_REPOSITORY = {
     return Level.findById(id).lean();
   },
 
+  findByName: async (name: string): Promise<ILevel | null> => {
+    return Level.findOne({ name }).lean();
+  },
+
   findAll: async (filter: any = {}): Promise<ILevel[]> => {
     return Level.find(filter).sort({ orderIndex: 1 }).lean();
   },
@@ -19,7 +23,7 @@ export const LEVEL_REPOSITORY = {
   },
 
   update: async (id: string, data: UpdateQuery<ILevel>): Promise<ILevel | null> => {
-    return Level.findByIdAndUpdate(id, data, { new: true }).lean();
+    return Level.findByIdAndUpdate(id, data, { returnDocument: 'after' }).lean();
   },
 
   deleteById: async (id: string): Promise<ILevel | null> => {

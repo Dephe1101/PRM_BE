@@ -21,6 +21,21 @@ export const wordController = {
     });
   }),
 
+  getAllWords: catchAsync(async (req: Request, res: Response) => {
+    const { page, limit, topicId, levelId, search } = req.query;
+    const result = await wordService.getAllWords(
+      Number(page) || 1,
+      Number(limit) || 10,
+      topicId as string | undefined,
+      levelId as string | undefined,
+      search as string | undefined
+    );
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: result,
+    });
+  }),
+
   getWordById: catchAsync(async (req: Request, res: Response) => {
     const result = await wordService.getWordById(req.params.id as string);
     res.status(StatusCodes.OK).json({

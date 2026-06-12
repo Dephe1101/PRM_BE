@@ -2,6 +2,16 @@ import Joi from 'joi';
 import { REGEXP } from '#constants/regexp';
 
 export const wordValidation = {
+  getAllWords: {
+    query: Joi.object({
+      page: Joi.number().integer().min(1).optional().default(1),
+      limit: Joi.number().integer().min(1).max(100).optional().default(10),
+      topicId: Joi.string().regex(REGEXP.OBJECT_ID).optional(),
+      levelId: Joi.string().regex(REGEXP.OBJECT_ID).optional(),
+      search: Joi.string().allow('').optional(),
+    }),
+  },
+
   createWord: {
     body: Joi.object({
       topicId: Joi.string().regex(REGEXP.OBJECT_ID).required().messages({

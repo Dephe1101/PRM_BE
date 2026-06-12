@@ -45,6 +45,9 @@ export const authService = {
     if (!user) {
       throw new ApiError(ERROR_CODES.INVALID_CREDENTIALS);
     }
+    if (!user.isActive) {
+      throw new ApiError(ERROR_CODES.ACCOUNT_DISABLED);
+    }
 
     // 2. Kiểm tra mật khẩu
     // Trong mongoose 6/7/8 khi lean thì mất method, phải gọi bcrypt trực tiếp
@@ -92,6 +95,9 @@ export const authService = {
     const user = await USER_REPOSITORY.findById(session.userId.toString());
     if (!user) {
       throw new ApiError(ERROR_CODES.UNAUTHORIZED);
+    }
+    if (!user.isActive) {
+      throw new ApiError(ERROR_CODES.ACCOUNT_DISABLED);
     }
 
     // 4. Tạo token MỚI

@@ -1,5 +1,5 @@
 import Word, { IWord } from '#models/wordModel';
-import { UpdateQuery } from 'mongoose';
+import { UpdateQuery, PaginateOptions, PaginateResult } from 'mongoose';
 
 export const WORD_REPOSITORY = {
   create: async (data: Partial<IWord>): Promise<IWord> => {
@@ -23,7 +23,7 @@ export const WORD_REPOSITORY = {
   },
 
   update: async (id: string, data: UpdateQuery<IWord>): Promise<IWord | null> => {
-    return Word.findByIdAndUpdate(id, data, { new: true }).lean();
+    return Word.findByIdAndUpdate(id, data, { returnDocument: 'after' }).lean();
   },
 
   deleteById: async (id: string): Promise<IWord | null> => {
@@ -36,5 +36,9 @@ export const WORD_REPOSITORY = {
 
   countByTopicId: async (topicId: string): Promise<number> => {
     return Word.countDocuments({ topicId });
+  },
+
+  findAll: async (filter: any = {}, options: PaginateOptions = {}): Promise<PaginateResult<IWord>> => {
+    return Word.paginate(filter, options);
   },
 };

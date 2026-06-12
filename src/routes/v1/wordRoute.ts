@@ -22,6 +22,74 @@ const router = Router();
 
 /**
  * @swagger
+ * /words:
+ *   get:
+ *     summary: Lấy toàn bộ danh sách Từ vựng (Public)
+ *     description: Lấy danh sách tất cả các từ vựng. Có thể filter theo topicId hoặc levelId.
+ *     tags: [Words]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: "Số trang"
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: "Số lượng kết quả mỗi trang"
+ *       - in: query
+ *         name: topicId
+ *         schema:
+ *           type: string
+ *         description: "Filter theo Topic"
+ *       - in: query
+ *         name: levelId
+ *         schema:
+ *           type: string
+ *         description: "Filter theo Level"
+ *     responses:
+ *       200:
+ *         description: Danh sách từ vựng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 docs:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       topicId:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           title:
+ *                             type: string
+ *                           levelId:
+ *                             type: object
+ *                             properties:
+ *                               _id:
+ *                                 type: string
+ *                               name:
+ *                                 type: string
+ *                       kanji:
+ *                         type: string
+ *                       hiragana:
+ *                         type: string
+ *                       meaning:
+ *                         type: string
+ */
+router.get('/', validationMiddleware(wordValidation.getAllWords), wordController.getAllWords);
+
+/**
+ * @swagger
  * /words/topic/{topicId}:
  *   get:
  *     summary: Lấy danh sách từ vựng theo Topic (Public)

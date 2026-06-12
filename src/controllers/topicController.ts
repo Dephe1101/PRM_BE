@@ -4,6 +4,30 @@ import { catchAsync } from '#utils/catchAsync';
 import { topicService } from '#services/topicService';
 
 export const topicController = {
+  getAllTopics: catchAsync(async (req: Request, res: Response) => {
+    const { page, limit } = req.query;
+    const options = {
+      page: parseInt(page as string) || 1,
+      limit: parseInt(limit as string) || 50,
+      sort: { orderIndex: 1 },
+    };
+
+    const result = await topicService.getAllTopics(options);
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: result,
+    });
+  }),
+
+  createTopic: catchAsync(async (req: Request, res: Response) => {
+    const result = await topicService.createTopic(req.body);
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: 'Tạo chủ đề thành công',
+      data: result,
+    });
+  }),
+
   importTopic: catchAsync(async (req: Request, res: Response) => {
     const result = await topicService.importTopicWithWords(req.body);
     res.status(StatusCodes.CREATED).json({

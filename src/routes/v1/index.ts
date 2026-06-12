@@ -7,6 +7,7 @@ import flashcardRoute from './flashcardRoute';
 import gameRoute from './gameRoute';
 import mediaRoute from './mediaRoute';
 import adminRoute from './adminRoute';
+import userRoute from './userRoute';
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use('/flashcards', flashcardRoute);
 router.use('/games', gameRoute);
 router.use('/media', mediaRoute);
 router.use('/admin', adminRoute);
+router.use('/users', userRoute);
 
 router.get('/ping', (req, res) => {
   res.json({ message: 'pong' });

@@ -10,7 +10,7 @@ export const USER_WORD_PROGRESS_REPOSITORY = {
     return UserWordProgress.findOneAndUpdate(
       { userId, wordId },
       data,
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
   },
 
@@ -46,7 +46,7 @@ export const USER_WORD_PROGRESS_REPOSITORY = {
   updateProgress: async (userId: string, wordId: string, setQuery: any, incQuery?: any): Promise<IUserWordProgress | null> => {
     const update: any = { $set: setQuery };
     if (incQuery) update.$inc = incQuery;
-    return UserWordProgress.findOneAndUpdate({ userId, wordId }, update, { new: true, upsert: true }).lean();
+    return UserWordProgress.findOneAndUpdate({ userId, wordId }, update, { returnDocument: 'after', upsert: true }).lean();
   },
 
   findBookmarked: async (userId: string): Promise<IUserWordProgress[]> => {
@@ -74,7 +74,7 @@ export const USER_WORD_PROGRESS_REPOSITORY = {
     return UserWordProgress.findOneAndUpdate(
       { userId, wordId },
       { $set: srsData },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
   },
 

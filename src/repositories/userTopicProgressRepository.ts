@@ -22,7 +22,7 @@ export const USER_TOPIC_PROGRESS_REPOSITORY = {
     return UserTopicProgress.findOneAndUpdate(
       { userId, topicId },
       { status },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
   },
 
@@ -30,7 +30,7 @@ export const USER_TOPIC_PROGRESS_REPOSITORY = {
     return UserTopicProgress.findOneAndUpdate(
       { userId, topicId },
       data,
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
   },
 

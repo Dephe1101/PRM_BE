@@ -20,6 +20,74 @@ const router = Router();
 
 /**
  * @swagger
+ * /topics:
+ *   get:
+ *     summary: Lấy toàn bộ danh sách Topic (Public)
+ *     description: Lấy danh sách tất cả các chủ đề (bài học) của mọi Level. Hỗ trợ phân trang. (LevelId được populate tên).
+ *     tags: [Topics]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: "Số trang"
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: "Số lượng kết quả mỗi trang"
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách Topic
+ */
+router.get('/', validationMiddleware(topicValidation.getAllTopics), topicController.getAllTopics);
+
+/**
+ * @swagger
+ * /topics:
+ *   post:
+ *     summary: Tạo Topic mới (Rỗng, chưa có từ vựng) (Admin)
+ *     description: Tính năng dành cho Admin để tạo một Topic trống.
+ *     tags: [Topics]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - levelId
+ *               - title
+ *             properties:
+ *               levelId:
+ *                 type: string
+ *                 description: "ID Level (dạng ObjectID)"
+ *               title:
+ *                 type: string
+ *                 description: "Tên Topic"
+ *               orderIndex:
+ *                 type: integer
+ *                 description: "Thứ tự sắp xếp (Tuỳ chọn)"
+ *     responses:
+ *       201:
+ *         description: Tạo Topic thành công
+ */
+router.post(
+  '/',
+  authMiddleware,
+  allowRoles(COMMON_CONSTANTS.USER_ROLE.ADMIN),
+  auditLogMiddleware,
+  sanitizeRequest(topicValidation.createTopic.body),
+  validationMiddleware(topicValidation.createTopic),
+  topicController.createTopic
+);
+
+/**
+ * @swagger
  * /topics/level/{levelId}:
  *   get:
  *     summary: Lấy danh sách Topic theo Level (Public)
@@ -31,8 +99,7 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
- *           pattern: '^[A-Z0-9]+$'
- *         description: "ID của Level (Ví dụ: N5)"
+ *         description: "ID của Level (dạng ObjectID)"
  *     responses:
  *       200:
  *         description: Trả về danh sách Topic
@@ -138,11 +205,14 @@ router.get('/:id', validationMiddleware(commonValidation.checkId), topicControll
  *               - title
  *               - words
  *             properties:
+ *               topicId:
+ *                 type: string
+ *                 description: "ID Topic (Tuỳ chọn). Nếu truyền, hệ thống sẽ chèn từ vào Topic này trước khi tự động tràn ly đẻ Topic mới."
+ *                 example: "6452f1a..."
  *               levelId:
  *                 type: string
- *                 pattern: '^[A-Z0-9]+$'
- *                 description: "ID Level (Ví dụ: N5)"
- *                 example: "N5"
+ *                 description: "ID Level (dạng ObjectID)"
+ *                 example: "6452f1a..."
  *               title:
  *                 type: string
  *                 minLength: 2

@@ -13,11 +13,7 @@ export interface ILevel {
 
 const levelSchema = new Schema(
   {
-    _id: {
-      type: String, // 'N5', 'N4', 'N3'...
-      required: true,
-      uppercase: true,
-    },
+    // Mongo tự sinh _id (ObjectId)
     name: {
       type: String, // 'JLPT N5'
       required: true,

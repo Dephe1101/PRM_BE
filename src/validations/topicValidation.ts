@@ -4,7 +4,8 @@ import { REGEXP } from '#constants/regexp';
 export const topicValidation = {
   importTopic: {
     body: Joi.object({
-      levelId: Joi.string().required().regex(REGEXP.LEVEL_ID).messages({
+      topicId: Joi.string().regex(REGEXP.OBJECT_ID).optional(),
+      levelId: Joi.string().required().regex(REGEXP.OBJECT_ID).messages({
         'any.required': 'Mã cấp độ là bắt buộc',
         'string.pattern.base': 'Mã cấp độ không hợp lệ',
       }),
@@ -34,6 +35,27 @@ export const topicValidation = {
     }),
   },
 
+  getAllTopics: {
+    query: Joi.object({
+      page: Joi.number().integer().min(1).optional().default(1),
+      limit: Joi.number().integer().min(1).max(100).optional().default(10),
+    }),
+  },
+
+  createTopic: {
+    body: Joi.object({
+      levelId: Joi.string().required().regex(REGEXP.OBJECT_ID).messages({
+        'any.required': 'Mã cấp độ là bắt buộc',
+        'string.pattern.base': 'Mã cấp độ không hợp lệ',
+      }),
+      title: Joi.string().required().min(2).max(100).trim().messages({
+        'any.required': 'Tên chủ đề là bắt buộc',
+        'string.min': 'Tên chủ đề phải có ít nhất {#limit} ký tự',
+      }),
+      orderIndex: Joi.number().integer().min(0).optional(),
+    }),
+  },
+
   updateTopic: {
     params: Joi.object({
       id: Joi.string().regex(REGEXP.OBJECT_ID).required().messages({
@@ -48,7 +70,7 @@ export const topicValidation = {
 
   getByLevel: {
     params: Joi.object({
-      levelId: Joi.string().required().regex(REGEXP.LEVEL_ID).messages({
+      levelId: Joi.string().required().regex(REGEXP.OBJECT_ID).messages({
         'string.pattern.base': 'Mã cấp độ không hợp lệ',
       }),
     }),

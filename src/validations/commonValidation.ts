@@ -12,7 +12,7 @@ export const commonValidation = {
   },
   checkLevelId: {
     params: Joi.object({
-      levelId: Joi.string().regex(REGEXP.LEVEL_ID).required().messages({
+      id: Joi.string().regex(REGEXP.OBJECT_ID).required().messages({
         'string.pattern.base': 'Level ID không hợp lệ',
         'any.required': 'Level ID là bắt buộc',
       }),
@@ -20,7 +20,7 @@ export const commonValidation = {
   },
   checkTopicId: {
     params: Joi.object({
-      topicId: Joi.string().regex(REGEXP.OBJECT_ID).required().messages({
+      id: Joi.string().regex(REGEXP.OBJECT_ID).required().messages({
         'string.pattern.base': 'Topic ID không hợp lệ',
         'any.required': 'Topic ID là bắt buộc',
       }),
@@ -28,7 +28,7 @@ export const commonValidation = {
   },
   checkWordId: {
     params: Joi.object({
-      wordId: Joi.string().regex(REGEXP.OBJECT_ID).required().messages({
+      id: Joi.string().regex(REGEXP.OBJECT_ID).required().messages({
         'string.pattern.base': 'Word ID không hợp lệ',
         'any.required': 'Word ID là bắt buộc',
       }),

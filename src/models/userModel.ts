@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import mongoosePaginate from 'mongoose-paginate-v2';
 import { COMMON_CONSTANTS } from '#constants/common';
 
 export interface IUser extends Document {
@@ -10,6 +11,7 @@ export interface IUser extends Document {
   level: number;
   xp: number;
   coins: number;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -51,6 +53,10 @@ const userSchema = new Schema(
       type: Number,
       default: 0,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
@@ -66,6 +72,8 @@ userSchema.methods.comparePassword = async function (candidatePassword: string):
   return bcrypt.compare(candidatePassword, this.passwordHash);
 };
 
-const User = mongoose.model<IUser>('User', userSchema);
+userSchema.plugin(mongoosePaginate);
+
+const User = mongoose.model<IUser, mongoose.PaginateModel<IUser>>('User', userSchema);
 
 export default User;

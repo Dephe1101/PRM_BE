@@ -11,7 +11,7 @@ export const GAME_SESSION_REPOSITORY = {
   },
 
   update: async (id: string, data: Partial<IGameSession>): Promise<IGameSession | null> => {
-    return GameSession.findByIdAndUpdate(id, data, { new: true }).lean();
+    return GameSession.findByIdAndUpdate(id, data, { returnDocument: 'after' }).lean();
   },
 
   findByUserId: async (userId: string, options: PaginateOptions = {}): Promise<PaginateResult<IGameSession>> => {

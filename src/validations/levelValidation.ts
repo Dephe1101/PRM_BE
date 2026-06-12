@@ -4,10 +4,7 @@ import { REGEXP } from '#constants/regexp';
 export const levelValidation = {
   createLevel: {
     body: Joi.object({
-      _id: Joi.string().required().regex(REGEXP.LEVEL_ID).uppercase().messages({
-        'any.required': 'Mã cấp độ là bắt buộc',
-        'string.pattern.base': 'Mã cấp độ chỉ chứa chữ in hoa và số',
-      }),
+
       name: Joi.string().required().min(2).max(50).trim().messages({
         'any.required': 'Tên cấp độ là bắt buộc',
         'string.min': 'Tên phải có ít nhất {#limit} ký tự',
@@ -23,8 +20,8 @@ export const levelValidation = {
 
   updateLevel: {
     params: Joi.object({
-      id: Joi.string().required().regex(REGEXP.LEVEL_ID).messages({
-        'string.pattern.base': 'Mã cấp độ không hợp lệ',
+      id: Joi.string().required().messages({
+        'any.required': 'ID cấp độ là bắt buộc',
       }),
     }),
     body: Joi.object({

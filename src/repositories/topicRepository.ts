@@ -27,7 +27,7 @@ export const TOPIC_REPOSITORY = {
   },
 
   update: async (id: string, data: UpdateQuery<ITopic>): Promise<ITopic | null> => {
-    return Topic.findByIdAndUpdate(id, data, { new: true }).lean();
+    return Topic.findByIdAndUpdate(id, data, { returnDocument: 'after' }).lean();
   },
 
   deleteById: async (id: string): Promise<ITopic | null> => {

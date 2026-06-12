@@ -43,7 +43,7 @@ const router = Router();
  *                     properties:
  *                       _id:
  *                         type: string
- *                         description: "ID dạng chuỗi ngắn (VD: N5)"
+ *                         description: "ID dạng ObjectID"
  *                       name:
  *                         type: string
  *                         description: "Tên cấp độ (VD: N5 - Căn bản)"
@@ -76,8 +76,7 @@ router.get('/', levelController.getAllLevels);
  *         required: true
  *         schema:
  *           type: string
- *           pattern: '^[A-Z0-9]+$'
- *         description: "ID của Level (Ví dụ: N5)"
+ *         description: "ID của Level"
  *     responses:
  *       200:
  *         description: Truy xuất thành công
@@ -121,15 +120,9 @@ router.get('/:id', validationMiddleware(commonValidation.checkLevelId), levelCon
  *           schema:
  *             type: object
  *             required:
- *               - _id
  *               - name
  *               - orderIndex
  *             properties:
- *               _id:
- *                 type: string
- *                 pattern: '^[A-Z0-9]+$'
- *                 description: "ID cấp độ, không được chứa ký tự đặc biệt, không dấu (Ví dụ: N3)"
- *                 example: "N3"
  *               name:
  *                 type: string
  *                 minLength: 2
@@ -205,8 +198,7 @@ router.post(
  *         required: true
  *         schema:
  *           type: string
- *           pattern: '^[A-Z0-9]+$'
- *         description: "ID của Level cần sửa (VD: N5)"
+ *         description: "ID của Level cần sửa"
  *     requestBody:
  *       required: false
  *       content:
@@ -280,8 +272,7 @@ router.put(
  *         required: true
  *         schema:
  *           type: string
- *           pattern: '^[A-Z0-9]+$'
- *         description: "ID Level cần xóa (VD: N5)"
+ *         description: "ID Level cần xóa"
  *     responses:
  *       200:
  *         description: Xóa thành công

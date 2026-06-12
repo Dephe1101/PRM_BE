@@ -65,80 +65,157 @@ const generateUniqueTopicTitles = async (
   }
 
   // Sinh ra đủ titles
+  let currentSuffix = suffix;
   for (let i = 0; i < count; i++) {
-    if (suffix === 1 && i === 0) {
+    if (currentSuffix === 1) {
       titles.push(baseTitle);
+      currentSuffix = 2;
     } else {
-      titles.push(`${baseTitle} (${suffix + i})`);
+      titles.push(`${baseTitle} (${currentSuffix})`);
+      currentSuffix++;
     }
-    if (suffix === 1) suffix = 2; // Sau khi dùng gốc, tiếp theo là (2)
   }
 
   return titles;
 };
 
 const importTopicWithWords = async (data: {
+  topicId?: string;
   levelId: string;
   title: string;
   words: any[];
 }) => {
-  const { levelId, title, words } = data;
+  const { topicId, levelId, title, words } = data;
 
   // 1. Validate Level tồn tại
   const level = await LEVEL_REPOSITORY.findById(levelId);
-  if (!level) throw new ApiError(ERROR_CODES.LEVEL_NOT_FOUND);
+  if (!level) {
+    throw new ApiError(ERROR_CODES.LEVEL_NOT_FOUND);
+  }
 
-  // 2. Validate minimum words
-  if (words.length < COMMON_CONSTANTS.TOPIC_WORD_LIMIT.MIN) {
+  // 2. Validate minimum words only for completely new import
+  if (!topicId && words.length < COMMON_CONSTANTS.TOPIC_WORD_LIMIT.MIN) {
     throw new ApiError(ERROR_CODES.TOPIC_WORD_COUNT_INVALID);
   }
 
-  // 3. Auto-Chunking
-  const wordChunks = chunkWords(words);
-
-  // 4. Auto-Suffixing
-  const topicTitles = await generateUniqueTopicTitles(levelId, title, wordChunks.length);
-
-  // 5. Lấy orderIndex hiện tại
+  let wordsToProcess = [...words];
+  const createdTopics = [];
   let currentMaxOrder = await TOPIC_REPOSITORY.getMaxOrderIndex(levelId);
 
-  // 6. Tạo Topics + Words
-  const createdTopics = [];
+  // 3. Nếu có topicId, thử lấp đầy Topic hiện tại trước
+  if (topicId) {
+    const existingTopic = await TOPIC_REPOSITORY.findById(topicId);
+    if (!existingTopic) {
+      throw new ApiError(ERROR_CODES.TOPIC_NOT_FOUND);
+    }
 
-  for (let i = 0; i < wordChunks.length; i++) {
-    currentMaxOrder++;
+    const existingWords = await WORD_REPOSITORY.findByTopicId(topicId);
+    const spaceLeft = COMMON_CONSTANTS.TOPIC_WORD_LIMIT.MAX - existingWords.length;
 
-    // Tạo Topic
-    const topic = await TOPIC_REPOSITORY.create({
-      levelId,
-      title: topicTitles[i],
-      orderIndex: currentMaxOrder,
-    });
+    if (spaceLeft > 0) {
+      let k = Math.min(spaceLeft, wordsToProcess.length);
+      let r = wordsToProcess.length - k;
 
-    // Tạo Words gắn với Topic
-    const wordsWithTopicId = wordChunks[i].map((w) => ({
-      ...w,
-      topicId: topic._id,
-    }));
-    
-    // Insert Many
-    const createdWords = await WORD_REPOSITORY.createMany(wordsWithTopicId);
+      // Nếu r > 0, tức là số từ import vượt quá chỗ trống, ta đang phải CHIA CẮT danh sách từ.
+      if (r > 0) {
+        if (
+          wordsToProcess.length <= COMMON_CONSTANTS.TOPIC_WORD_LIMIT.MAX &&
+          existingWords.length >= COMMON_CONSTANTS.TOPIC_WORD_LIMIT.MIN
+        ) {
+          // Danh sách import hoàn toàn nằm gọn được trong 1 topic.
+          // Topic cũ lại đang HỢP LỆ (>= MIN).
+          // => Không tội gì phải cắt vụn danh sách import ra cả, nhường toàn bộ cho topic mới.
+          k = 0;
+        } else if (r < COMMON_CONSTANTS.TOPIC_WORD_LIMIT.MIN) {
+          k = wordsToProcess.length - COMMON_CONSTANTS.TOPIC_WORD_LIMIT.MIN;
+          if (k < 0) k = 0; // Đảm bảo không âm
+        }
+      }
 
-    createdTopics.push({
-      topic,
-      words: createdWords,
-      wordCount: createdWords.length,
-    });
+      if (k > 0) {
+        const wordsToInsert = wordsToProcess.splice(0, k);
+        const wordsWithTopicId = wordsToInsert.map((w) => ({
+          ...w,
+          topicId: existingTopic._id,
+        }));
+        const createdWords = await WORD_REPOSITORY.createMany(wordsWithTopicId);
+
+        createdTopics.push({
+          topic: existingTopic,
+          words: createdWords,
+          wordCount: createdWords.length,
+          isNewTopic: false,
+        });
+      }
+    }
+  }
+
+  // 4. Nếu vẫn còn từ, tạo Topic mới (tự chunk và auto-suffix)
+  if (wordsToProcess.length > 0) {
+    const wordChunks = chunkWords(wordsToProcess);
+    const topicTitles = await generateUniqueTopicTitles(levelId, title, wordChunks.length);
+
+    for (let i = 0; i < wordChunks.length; i++) {
+      currentMaxOrder++;
+      const topic = await TOPIC_REPOSITORY.create({
+        levelId,
+        title: topicTitles[i],
+        orderIndex: currentMaxOrder,
+      });
+
+      const wordsWithTopicId = wordChunks[i].map((w) => ({
+        ...w,
+        topicId: topic._id,
+      }));
+      const createdWords = await WORD_REPOSITORY.createMany(wordsWithTopicId);
+
+      createdTopics.push({
+        topic,
+        words: createdWords,
+        wordCount: createdWords.length,
+        isNewTopic: true,
+      });
+    }
   }
 
   return {
-    totalTopicsCreated: createdTopics.length,
-    totalWordsCreated: words.length,
+    totalTopicsCreated: createdTopics.filter(t => t.isNewTopic).length,
+    totalWordsImported: words.length,
     topics: createdTopics,
   };
 };
 
 export const topicService = {
+  getAllTopics: async (options?: any) => {
+    // Populate levelId to get Level name
+    const populateOption = { path: 'levelId', select: 'name' };
+    const mergedOptions = { ...options, populate: populateOption };
+    return TOPIC_REPOSITORY.findAll({}, mergedOptions);
+  },
+
+  createTopic: async (data: { levelId: string; title: string; orderIndex?: number }) => {
+    const level = await LEVEL_REPOSITORY.findById(data.levelId);
+    if (!level) throw new ApiError(ERROR_CODES.LEVEL_NOT_FOUND);
+
+    let { levelId, title, orderIndex } = data;
+
+    // Check duplicate title in same level
+    const existing = await TOPIC_REPOSITORY.findByLevelAndTitle(levelId, title);
+    if (existing) throw new ApiError(ERROR_CODES.TOPIC_TITLE_EXISTS);
+
+    // Auto orderIndex if not provided
+    if (orderIndex === undefined) {
+      const maxOrder = await TOPIC_REPOSITORY.getMaxOrderIndex(levelId);
+      orderIndex = maxOrder + 1;
+    }
+
+    return TOPIC_REPOSITORY.create({
+      levelId,
+      title,
+      orderIndex,
+    });
+  },
+
   importTopicWithWords,
 
   getTopicsByLevel: async (levelId: string, options?: any) => {
@@ -150,7 +227,7 @@ export const topicService = {
   getTopicDetail: async (id: string) => {
     const topic = await TOPIC_REPOSITORY.findById(id);
     if (!topic) throw new ApiError(ERROR_CODES.TOPIC_NOT_FOUND);
-    
+
     const words = await WORD_REPOSITORY.findByTopicId(id);
     return { ...topic, words };
   },

@@ -25,6 +25,9 @@ export const authMiddleware = catchAsync(
       if (!user) {
         throw new ApiError(ERROR_CODES.UNAUTHORIZED);
       }
+      if (!user.isActive) {
+        throw new ApiError(ERROR_CODES.ACCOUNT_DISABLED);
+      }
 
       // 4. Gắn user vào request
       req.user = {
