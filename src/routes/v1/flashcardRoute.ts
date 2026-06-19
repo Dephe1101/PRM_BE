@@ -88,6 +88,33 @@ router.get(
 
 /**
  * @swagger
+ * /flashcards/levels/{levelId}/topics:
+ *   get:
+ *     summary: Lấy danh sách Topic kèm tiến độ theo Level
+ *     description: Trả về danh sách Topic kèm theo số từ vựng (totalWords), số từ đang học (learnedWords), số từ đã thuộc (masteredWords) và trạng thái (status).
+ *     tags: [Flashcards]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: levelId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
+ *     responses:
+ *       200:
+ *         description: Thành công
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  '/levels/:levelId/topics',
+  flashcardController.getTopicsProgressByLevel
+);
+
+/**
+ * @swagger
  * /flashcards/submit:
  *   post:
  *     summary: Submit kết quả 1 thẻ Flashcard
@@ -198,42 +225,6 @@ router.post(
   flashcardController.submitBatch
 );
 
-/**
- * @swagger
- * /flashcards/review:
- *   get:
- *     summary: Lấy danh sách từ vựng ĐẾN HẠN ôn tập (Due Review)
- *     description: Lấy ra toàn bộ các từ vựng mà user đã học và ĐANG ĐẾN HẠN phải ôn tập lại (nextReviewDate <= thời gian hiện tại). Dành riêng cho màn hình Review hằng ngày.
- *     tags: [Flashcards]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: array
- *                   description: "Danh sách từ vựng cần ôn tập ngay lúc này"
- *                   items:
- *                     type: object
- *                     properties:
- *                       wordId:
- *                         type: string
- *                       hiragana:
- *                         type: string
- *                       srsStage:
- *                         type: number
- *       401:
- *         description: Unauthorized
- */
-router.get('/review', flashcardController.getReviewWords);
 
 /**
  * @swagger
@@ -267,6 +258,51 @@ router.get('/review', flashcardController.getReviewWords);
  *         description: Unauthorized
  */
 router.get('/progress', flashcardController.getProgress);
+
+/**
+ * @swagger
+ * /flashcards/bookmarks/study:
+ *   get:
+ *     summary: Lấy danh sách flashcard cho các từ vựng đã Bookmark
+ *     description: Trả về danh sách flashcard (word + progress) giống như khi học theo topic, nhưng chỉ lấy các từ đã được bookmark.
+ *     tags: [Flashcards]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thành công
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/bookmarks/study', flashcardController.getBookmarkedFlashcards);
+
+/**
+ * @swagger
+ * /flashcards/topics/{topicId}/bookmarks:
+ *   get:
+ *     summary: Lấy danh sách flashcard đã bookmark của 1 Topic
+ *     description: Trả về danh sách flashcard (word + progress) cho những từ đã bookmark thuộc về 1 topic cụ thể.
+ *     tags: [Flashcards]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: topicId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
+ *     responses:
+ *       200:
+ *         description: Thành công
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  '/topics/:topicId/bookmarks',
+  validationMiddleware(flashcardValidation.getByTopic),
+  flashcardController.getBookmarkedFlashcardsByTopic
+);
 
 /**
  * @swagger

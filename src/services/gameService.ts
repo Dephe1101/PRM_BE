@@ -27,7 +27,7 @@ const generateDistractors = (
 
 const calculateRewards = (score: number, maxCombo: number, gameType: string) => {
   let coinsEarned = Math.floor(score / 100);
-  
+
   if (maxCombo >= 5) coinsEarned = Math.floor(coinsEarned * 1.1);
   if (maxCombo >= 10) coinsEarned = Math.floor(coinsEarned * 1.2);
 
@@ -51,8 +51,8 @@ export const gameService = {
 
     // 2. DATA GENERATION
     const allWords = await WORD_REPOSITORY.findByTopicIds(topicIds);
-    if (allWords.length === 0) {
-      throw new ApiError(ERROR_CODES.WORD_NOT_FOUND, 'Không có từ vựng nào trong chủ đề');
+    if (allWords.length < 4) {
+      throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 'Cần ít nhất 4 từ vựng trong các chủ đề đã chọn để chơi game');
     }
 
     const shuffledWords = shuffleArray(allWords);
@@ -66,9 +66,15 @@ export const gameService = {
       };
 
       if (gameType === COMMON_CONSTANTS.GAME_TYPE.FALLING_WORDS) {
+        const distractors = generateDistractors(word, allWords);
+        const options = [
+          { text: word.meaning, isCorrect: true },
+          ...distractors.map((d) => ({ text: d, isCorrect: false })),
+        ];
         return {
           ...baseWord,
           correctMeaning: word.meaning,
+          options: shuffleArray(options),
           speed: 1.0, // Base speed
         };
       }
@@ -149,63 +155,35 @@ export const gameService = {
     await USER_REPOSITORY.addCoins(userId, coinsEarned);
     await USER_REPOSITORY.addXp(userId, xpEarned);
 
-    // 4. ĐỒNG BỘ SRS
+    // 4. LƯU LẠI LỊCH SỬ CHƠI VÀ THỐNG KÊ TỪ VỰNG (Không ảnh hưởng SRS)
     for (const wordId of wordsHit) {
       let progress = await USER_WORD_PROGRESS_REPOSITORY.findByUserAndWord(userId, wordId);
       if (!progress) {
         await USER_WORD_PROGRESS_REPOSITORY.initProgressForWords(userId, [wordId]);
-        progress = await USER_WORD_PROGRESS_REPOSITORY.findByUserAndWord(userId, wordId);
       }
-      const srsData = handleCorrectAnswer(progress?.srsStage || 0);
       await USER_WORD_PROGRESS_REPOSITORY.updateProgress(
         userId,
         wordId,
         {
-          srsStage: srsData.srsStage,
-          nextReviewAt: srsData.nextReviewAt,
           lastPlayedAt: new Date(),
         },
-        { correctCount: srsData.correctCount }
+        { correctCount: 1 }
       );
     }
-
-    const topicsToRecheck = new Set<string>();
 
     for (const wordId of wordsMissed) {
-      const srsData = handleWrongAnswer();
+      let progress = await USER_WORD_PROGRESS_REPOSITORY.findByUserAndWord(userId, wordId);
+      if (!progress) {
+        await USER_WORD_PROGRESS_REPOSITORY.initProgressForWords(userId, [wordId]);
+      }
       await USER_WORD_PROGRESS_REPOSITORY.updateProgress(
         userId,
         wordId,
         {
-          srsStage: srsData.srsStage,
-          nextReviewAt: srsData.nextReviewAt,
           lastPlayedAt: new Date(),
         },
-        { wrongCount: srsData.wrongCount }
+        { wrongCount: 1 }
       );
-      
-      const word = await WORD_REPOSITORY.findById(wordId);
-      if (word) topicsToRecheck.add(word.topicId.toString());
-    }
-
-    // 5. CHECK TOPIC MASTERY (revert if missed)
-    for (const topicId of topicsToRecheck) {
-      const wordsInTopic = await WORD_REPOSITORY.findByTopicId(topicId);
-      const wordIds = wordsInTopic.map((w: any) => w._id.toString());
-      if (wordIds.length > 0) {
-        const progresses = await USER_WORD_PROGRESS_REPOSITORY.findByUserAndWords(userId, wordIds);
-        const isMastered =
-          progresses.length === wordIds.length &&
-          progresses.every((p: any) => p.srsStage >= 1);
-
-        const newStatus = isMastered
-          ? COMMON_CONSTANTS.TOPIC_STATUS.MASTERED
-          : COMMON_CONSTANTS.TOPIC_STATUS.LEARNING;
-
-        await USER_TOPIC_PROGRESS_REPOSITORY.upsert(userId, topicId, {
-          status: newStatus,
-        });
-      }
     }
 
     return {
@@ -218,12 +196,15 @@ export const gameService = {
     };
   },
 
-  getEligibleTopics: async (userId: string) => {
+  getEligibleTopics: async (userId: string, levelId?: string) => {
     const masteredTopics = await USER_TOPIC_PROGRESS_REPOSITORY.findMasteredByUserId(userId);
     const topicIds = masteredTopics.map((t: any) => t.topicId);
     if (topicIds.length === 0) return [];
 
-    const topics = await TOPIC_REPOSITORY.findByIds(topicIds);
+    let topics = await TOPIC_REPOSITORY.findByIds(topicIds);
+    if (levelId) {
+      topics = topics.filter((t: any) => t.levelId.toString() === levelId.toString());
+    }
     return topics;
   },
 
@@ -239,12 +220,12 @@ export const gameService = {
     return session;
   },
 
-  getLeaderboard: async (gameType?: string, limit?: number) => {
+  getLeaderboard: async (gameType?: string, topicIds: string[] = [], limit?: number) => {
     if (!gameType) return [];
-    return GAME_SESSION_REPOSITORY.findTopScores(gameType, limit);
+    return GAME_SESSION_REPOSITORY.findTopScores(gameType, topicIds, limit);
   },
 
-  getStats: async (userId: string) => {
-    return GAME_SESSION_REPOSITORY.getStats(userId);
+  getStats: async (userId: string, topicIds: string[] = []) => {
+    return GAME_SESSION_REPOSITORY.getStats(userId, topicIds);
   },
 };

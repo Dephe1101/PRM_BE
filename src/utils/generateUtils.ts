@@ -10,14 +10,13 @@ export const shuffleArray = <T>(array: T[]): T[] => {
   return arr;
 };
 
-import Joi from 'joi';
 
 export const GENERATE_UTILS = {
   extractFieldsFromJoi: (joiSchema: any): { allowedFields: string[]; requiredFields: string[] } => {
     if (!joiSchema || typeof joiSchema.describe !== 'function') {
       return { allowedFields: [], requiredFields: [] };
     }
-    
+
     try {
       const description = joiSchema.describe();
       if (!description || !description.keys) {

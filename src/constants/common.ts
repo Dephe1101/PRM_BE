@@ -8,6 +8,7 @@ export const COMMON_CONSTANTS = {
   // === Topic Progress Status ===
   TOPIC_STATUS: {
     LOCKED: 'LOCKED',
+    NOT_LEARNED: 'NOT_LEARNED',
     LEARNING: 'LEARNING',
     MASTERED: 'MASTERED',
   },
@@ -26,7 +27,7 @@ export const COMMON_CONSTANTS = {
 
   // === SRS Config ===
   SRS: {
-    STAGES: [0, 1, 3, 7, 14, 30, 90], // Ngày delay theo stage
+    STAGES: [0, 1, 0], // 0: chưa thuộc, 1: chờ 1 ngày, 2: master (không dùng số ngày)
     INITIAL_STAGE: 0,
     MIN_STAGE: 0,
   },

@@ -41,4 +41,12 @@ export const WORD_REPOSITORY = {
   findAll: async (filter: any = {}, options: PaginateOptions = {}): Promise<PaginateResult<IWord>> => {
     return Word.paginate(filter, options);
   },
+
+  getWordCountByTopics: async (topicIds: string[]): Promise<any[]> => {
+    const objectIds = topicIds.map(id => new (require('mongoose').Types.ObjectId)(id));
+    return Word.aggregate([
+      { $match: { topicId: { $in: objectIds } } },
+      { $group: { _id: '$topicId', totalWords: { $sum: 1 } } },
+    ]);
+  },
 };

@@ -45,8 +45,13 @@ export const gameController = {
   }),
 
   getLeaderboard: catchAsync(async (req: Request, res: Response) => {
+    let topicIds: string[] = [];
+    if (req.query.topicIds) {
+      topicIds = (req.query.topicIds as string).split(',').filter(Boolean);
+    }
     const result = await gameService.getLeaderboard(
       req.query.gameType as string,
+      topicIds,
       Number(req.query.limit) || 10
     );
 
@@ -57,7 +62,11 @@ export const gameController = {
   }),
 
   getStats: catchAsync(async (req: Request, res: Response) => {
-    const result = await gameService.getStats(req.user!._id);
+    let topicIds: string[] = [];
+    if (req.query.topicIds) {
+      topicIds = (req.query.topicIds as string).split(',').filter(Boolean);
+    }
+    const result = await gameService.getStats(req.user!._id, topicIds);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -66,7 +75,8 @@ export const gameController = {
   }),
 
   getEligibleTopics: catchAsync(async (req: Request, res: Response) => {
-    const result = await gameService.getEligibleTopics(req.user!._id);
+    const levelId = req.query.levelId as string;
+    const result = await gameService.getEligibleTopics(req.user!._id, levelId);
 
     res.status(StatusCodes.OK).json({
       success: true,

@@ -4,7 +4,7 @@ export interface IUserWordProgress extends Document {
   userId: mongoose.Types.ObjectId;
   wordId: mongoose.Types.ObjectId;
   srsStage: number;
-  nextReviewAt: Date;
+  nextReviewAt: Date | null;
   correctCount: number;
   wrongCount: number;
   isBookmarked: boolean;
